@@ -78,11 +78,13 @@ func (p *Provider) Provide(configurationChan chan<- dynamic.Message, pool *safe.
 			return errors.New("error using file configuration provider, neither filename nor directory is defined")
 		}
 
+		// 这里添加文件监听器，当文件发生变化，调用p.applyConfiguration方法，传递的参数为configurationChan
 		if err := p.addWatcher(pool, watchItems, configurationChan, p.applyConfiguration); err != nil {
 			return err
 		}
 	}
 
+	// 这里额外监听系统信号，出现了syscall.SIGHUP信号后，重新加载配置
 	pool.GoCtx(func(ctx context.Context) {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, syscall.SIGHUP)
@@ -127,6 +129,7 @@ func (p *Provider) addWatcher(pool *safe.Pool, items []string, configurationChan
 	}
 
 	// Process events
+	// 使用pool.GoCtx的原因是使用pool的ctx来统一控制协程，当主进程退出后，所有协程也一起退出
 	pool.GoCtx(func(ctx context.Context) {
 		logger := log.With().Str(logs.ProviderName, providerName).Logger()
 		defer watcher.Close()
@@ -160,11 +163,17 @@ func (p *Provider) addWatcher(pool *safe.Pool, items []string, configurationChan
 
 // applyConfiguration builds the configuration and sends it to the given configurationChan.
 func (p *Provider) applyConfiguration(configurationChan chan<- dynamic.Message) error {
+	// p.buildConfiguration方法会根据Filename和Directory来加载配置
 	configuration, err := p.buildConfiguration()
 	if err != nil {
 		return err
 	}
 
+	// 这里将从本地配置文件加载的配置发送到configurationChan通道，configurationChan通道是通过configurationWatcher.startProviderAggregator()中调用的
+	// ProviderAggregator.Provide(configurationWatcher.allProvidersConfigs, pool) -> ProviderAggregator.launchProvider() -> file.Provider.Provide()方法传递过来的
+	// configurationWatcher.allProvidersConfigs
+	// configurationWatcher.allProvidersConfigs在configurationWatcher.receiveConfigurations()方法中被接收，传递给configurationWatcher.newConfigs通道
+	// 然后在configurationWatcher.applyConfiguration()方法中被接收，再传递给configurationWatcher.listeners中的方法加载配置
 	sendConfigToChannel(configurationChan, configuration)
 	return nil
 }

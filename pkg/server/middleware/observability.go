@@ -51,18 +51,23 @@ func (o *ObservabilityMgr) BuildEPChain(ctx context.Context, entryPointName stri
 
 	if o.accessLoggerMiddleware != nil || o.metricsRegistry != nil && (o.metricsRegistry.IsEpEnabled() || o.metricsRegistry.IsRouterEnabled() || o.metricsRegistry.IsSvcEnabled()) {
 		if o.ShouldAddAccessLogs(resourceName, observabilityConfig) || o.ShouldAddMetrics(resourceName, observabilityConfig) {
+			// capture.Wrap实现了alice.Constructor接口，封装了http.Handler的req和rw，可以记录req和rw的相关数据，如请求和应答的大小，应答的statuscode等信息
+			// 在metricmiddleware中会调用获取并记录下来，后续如果需要扩展更多信息，可以修改capture.Wrap
 			chain = chain.Append(capture.Wrap)
 		}
 	}
 
 	// As the Entry point observability middleware ensures that the tracing is added to the request and logger context,
 	// it needs to be added before the access log middleware to ensure that the trace ID is logged.
+	// TODO 这里添加的alice.Constructor的用途未知
 	if o.tracer != nil && o.ShouldAddTracing(resourceName, observabilityConfig) {
 		chain = chain.Append(observability.EntryPointHandler(ctx, o.tracer, entryPointName))
 	}
 
 	if o.accessLoggerMiddleware != nil && o.ShouldAddAccessLogs(resourceName, observabilityConfig) {
+		// 封装accessLoggerMiddleware中间件，处理成http.Handler，用于将HTTP请求相关信息记录到日志结构体中
 		chain = chain.Append(accesslog.WrapHandler(o.accessLoggerMiddleware))
+		// 封装accesslog.FieldHandler中间件，处理成http.Handler，主要是增加日志字段
 		chain = chain.Append(func(next http.Handler) (http.Handler, error) {
 			return accesslog.NewFieldHandler(next, logs.EntryPointName, entryPointName, accesslog.InitServiceFields), nil
 		})

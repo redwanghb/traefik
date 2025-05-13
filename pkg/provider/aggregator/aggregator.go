@@ -30,6 +30,8 @@ type throttled interface {
 // provider implements the throttled interface.
 func maybeThrottledProvide(prd provider.Provider, defaultDuration time.Duration) func(chan<- dynamic.Message, *safe.Pool) error {
 	providerThrottleDuration := defaultDuration
+	// file.Provider未实现throttled接口
+	// internalProvider实现了throttled接口，返回的时间为0
 	if throttled, ok := prd.(throttled); ok {
 		// per-provider throttling
 		providerThrottleDuration = throttled.ThrottleDuration()
@@ -194,6 +196,7 @@ func (p *ProviderAggregator) Provide(configurationChan chan<- dynamic.Message, p
 }
 
 func (p *ProviderAggregator) launchProvider(configurationChan chan<- dynamic.Message, pool *safe.Pool, prd provider.Provider) {
+	// 去除配置中的敏感信息，也就是在结构体中标记为loggable:"false"的成员字段
 	jsonConf, err := redactor.RemoveCredentials(prd)
 	if err != nil {
 		log.Debug().Err(err).Msgf("Cannot marshal the provider configuration %T", prd)

@@ -73,7 +73,9 @@ func (m *Manager) getHTTPRouters(ctx context.Context, entryPoints []string, tls 
 
 // BuildHandlers builds the handlers for the given entrypoints.
 func (m *Manager) BuildHandlers(rootCtx context.Context, entryPoints []string) map[string]*Router {
+	// map[EntryPointName]map[RouterInfoName]*TCPRouterInfo
 	entryPointsRouters := m.getTCPRouters(rootCtx, entryPoints)
+	// map[EntryPointName]map[RouterInfoname]*RouterInfo
 	entryPointsRoutersHTTP := m.getHTTPRouters(rootCtx, entryPoints, true)
 
 	entryPointHandlers := make(map[string]*Router)
@@ -83,6 +85,7 @@ func (m *Manager) BuildHandlers(rootCtx context.Context, entryPoints []string) m
 		logger := log.Ctx(rootCtx).With().Str(logs.EntryPointName, entryPointName).Logger()
 		ctx := logger.WithContext(rootCtx)
 
+		// 基于Manager构建tcp.Router，
 		handler, err := m.buildEntryPointHandler(ctx, routers, entryPointsRoutersHTTP[entryPointName], m.httpHandlers[entryPointName], m.httpsHandlers[entryPointName])
 		if err != nil {
 			logger.Error().Err(err).Send()
@@ -100,11 +103,13 @@ type nameAndConfig struct {
 
 func (m *Manager) buildEntryPointHandler(ctx context.Context, configs map[string]*runtime.TCPRouterInfo, configsHTTP map[string]*runtime.RouterInfo, handlerHTTP, handlerHTTPS http.Handler) (*Router, error) {
 	// Build a new Router.
+	// 创建一个tcp.Router
 	router, err := NewRouter()
 	if err != nil {
 		return nil, err
 	}
 
+	// 设置tcp.Router.httpHandler
 	router.SetHTTPHandler(handlerHTTP)
 
 	// Even though the error is seemingly ignored (aside from logging it),
@@ -284,6 +289,7 @@ func (m *Manager) addTCPHandlers(ctx context.Context, configs map[string]*runtim
 			continue
 		}
 
+		// 从规则中提取域名
 		domains, err := tcpmuxer.ParseHostSNI(routerConfig.Rule)
 		if err != nil {
 			routerErr := fmt.Errorf("invalid rule: %q , %w", routerConfig.Rule, err)
@@ -321,6 +327,7 @@ func (m *Manager) addTCPHandlers(ctx context.Context, configs map[string]*runtim
 		if routerConfig.TLS == nil {
 			logger.Debug().Msgf("Adding route for %q", routerConfig.Rule)
 
+			// 将新创建的tcp.Handler添加tcp.Router的TCPmuxer.routes.route.handler中
 			if err := router.muxerTCP.AddRoute(routerConfig.Rule, routerConfig.RuleSyntax, routerConfig.Priority, handler); err != nil {
 				routerConfig.AddError(err, true)
 				logger.Error().Err(err).Send()

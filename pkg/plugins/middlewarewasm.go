@@ -34,11 +34,13 @@ func newWasmMiddlewareBuilder(goPath, moduleName, wasmPath string, settings Sett
 		return nil, fmt.Errorf("loading Wasm binary: %w", err)
 	}
 
+	// 创建一个wasm runtime，并编译模块
 	rt := wazero.NewRuntimeWithConfig(ctx, wazero.NewRuntimeConfig().WithCompilationCache(cache))
 	if _, err = rt.CompileModule(ctx, code); err != nil {
 		return nil, fmt.Errorf("compiling guest module: %w", err)
 	}
 
+	// 返回wasmMiddlewareBuilder实例，包含了wasm路径、cache和配置
 	return &wasmMiddlewareBuilder{path: path, cache: cache, settings: settings}, nil
 }
 

@@ -51,6 +51,7 @@ func NewConfigurationWatcher(
 // Start the configuration watcher.
 func (c *ConfigurationWatcher) Start() {
 	c.routinesPool.GoCtx(c.receiveConfigurations)
+	// 执行了CongurationWatcher.configurationsListeners
 	c.routinesPool.GoCtx(c.applyConfigurations)
 	c.startProviderAggregator()
 }
@@ -96,6 +97,7 @@ func (c *ConfigurationWatcher) receiveConfigurations(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		// DeepCopy is necessary because newConfigurations gets modified later by the consumer of c.newConfigs
+		// output通道长度为0，所以在没有接收方接收的情况下，会一直阻塞，不会执行
 		case output <- newConfigurations.DeepCopy():
 			output = nil
 
@@ -103,6 +105,7 @@ func (c *ConfigurationWatcher) receiveConfigurations(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 				return
+			// 在file.Provider.Provide中，调用了c.allProvidersConfigs <- configMsg，用于将动态配置传递给allProvidersConfigs
 			case configMsg, ok := <-c.allProvidersConfigs:
 				if !ok {
 					return
@@ -122,17 +125,24 @@ func (c *ConfigurationWatcher) receiveConfigurations(ctx context.Context) {
 
 				logConfiguration(logger, configMsg)
 
+				// 检查新接收到的配置对比以前的配置是否有变化
 				if reflect.DeepEqual(newConfigurations[configMsg.ProviderName], configMsg.Configuration) {
 					// no change, do nothing
 					logger.Debug().Msg("Skipping unchanged configuration")
 					continue
 				}
 
+				// 将新接收的配置存储到newConfiguratons中
 				newConfigurations[configMsg.ProviderName] = configMsg.Configuration.DeepCopy()
 
+				// 将c.newConfigs赋值给output，可以触发applyConfigurations
+				// 将out指向ConfigurationWatcher.newConfigs通道，监听来自于Provider提供的配置文件
+				// Provider.Provide() > ConfigurationWathcer.allprovidersConfigs > ConfigurationWatcher.newConfigs > out
 				output = c.newConfigs
 
 			// DeepCopy is necessary because newConfigurations gets modified later by the consumer of c.newConfigs
+			// 如果output被指向newConfigs以后，下面的条件可以执行
+			// 之后将output指向nil，就无法接收newConfigurations.DeepCopy()
 			case output <- newConfigurations.DeepCopy():
 				output = nil
 			}
@@ -151,6 +161,12 @@ func (c *ConfigurationWatcher) applyConfigurations(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
+
+		// 在reciveConfigurations中，会将c.allProvidersConfigs接收到的配置传递给newConfigs
+		// c.allProvidersConfigs的内容来源于各个provider的Provide方法
+		// 例如file.Provider.applyConfiguration中，会将从本地加载的配置文件，通过sendConfigToChannel发送给c.allProvidersConfigs
+		// c.allProvidersConfigs是通过c.startProviderAggregator() -> c.providerAggregator.Provide() -> file.Provider.Provide()调用链传递给file.Provider.applyConfiguration
+		// 这里接收到了配置文件的内容后，传递给c.Listeners执行配置
 		case newConfigs, ok := <-c.newConfigs:
 			if !ok {
 				return

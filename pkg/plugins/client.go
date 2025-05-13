@@ -319,7 +319,9 @@ func unzipFile(f *zipa.File, dest string) error {
 }
 
 // CleanArchives cleans plugins archives.
+// 方法中打开文件未关闭
 func (c *Client) CleanArchives(plugins map[string]Descriptor) error {
+	// 判断state.json文件是否存在
 	if _, err := os.Stat(c.stateFile); os.IsNotExist(err) {
 		return nil
 	}

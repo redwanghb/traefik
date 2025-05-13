@@ -67,11 +67,12 @@ func NewManager(configs map[string]*runtime.ServiceInfo, observabilityMgr *middl
 		observabilityMgr: observabilityMgr,
 		transportManager: transportManager,
 		proxyBuilder:     proxyBuilder,
-		serviceBuilders:  serviceBuilders,
-		services:         make(map[string]http.Handler),
-		configs:          configs,
-		healthCheckers:   make(map[string]*healthcheck.ServiceHealthChecker),
-		rand:             rand.New(rand.NewSource(time.Now().UnixNano())),
+		// serviceBuilders存储的是[]serviceBuilder,通过执行BuildHTTP可以返回对应的http.Handler处理请求
+		serviceBuilders: serviceBuilders,
+		services:        make(map[string]http.Handler),
+		configs:         configs,
+		healthCheckers:  make(map[string]*healthcheck.ServiceHealthChecker),
+		rand:            rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
@@ -82,6 +83,7 @@ func (m *Manager) BuildHTTP(rootCtx context.Context, serviceName string) (http.H
 	ctx := log.Ctx(rootCtx).With().Str(logs.ServiceName, serviceName).Logger().
 		WithContext(provider.AddInContext(rootCtx, serviceName))
 
+	// 如果在m.services可以找到服务名称，直接返回对应的http.Handler
 	handler, ok := m.services[serviceName]
 	if ok {
 		return handler, nil

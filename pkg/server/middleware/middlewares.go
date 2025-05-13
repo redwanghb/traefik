@@ -66,9 +66,11 @@ func NewBuilder(configs map[string]*runtime.MiddlewareInfo, serviceBuilder servi
 func (b *Builder) BuildChain(ctx context.Context, middlewares []string) *alice.Chain {
 	chain := alice.New()
 	for _, name := range middlewares {
+		// 返回的是middlewareName@providerName
 		middlewareName := provider.GetQualifiedName(ctx, name)
 
 		chain = chain.Append(func(next http.Handler) (http.Handler, error) {
+			// 将providerName加入到context中
 			constructorContext := provider.AddInContext(ctx, middlewareName)
 			if midInf, ok := b.configs[middlewareName]; !ok || midInf.Middleware == nil {
 				return nil, fmt.Errorf("middleware %q does not exist", middlewareName)

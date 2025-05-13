@@ -1,0 +1,21 @@
+http:
+  routers:
+    route0:
+      entryPoints:
+        - web
+      service: service-test
+      rule: Path(`/test`)
+    route1:
+      entryPoints:
+        - web
+      service: ollama
+      rule: Path(`/api/chat`)
+  services:
+    service-test:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8081"
+    ollama:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:11434/api/chat"

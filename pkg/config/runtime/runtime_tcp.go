@@ -12,9 +12,11 @@ import (
 )
 
 // GetTCPRoutersByEntryPoints returns all the tcp routers by entry points name and routers name.
+// 返回map[EntryPointName]map[RouterInfoName]*TCPRouterInfo
 func (c *Configuration) GetTCPRoutersByEntryPoints(ctx context.Context, entryPoints []string) map[string]map[string]*TCPRouterInfo {
 	entryPointsRouters := make(map[string]map[string]*TCPRouterInfo)
 
+	// 遍历runtime.Configuration里的TCPRouters(RouterInfo)
 	for rtName, rt := range c.TCPRouters {
 		logger := log.Ctx(ctx).With().Str(logs.RouterName, rtName).Logger()
 

@@ -38,6 +38,7 @@ func NewServer(routinesPool *safe.Pool, entryPoints TCPEntryPoints, entryPointsU
 		udpEntryPoints:   entryPointsUDP,
 	}
 
+	// 监听系统自定义信号syscall.SIGUSR1
 	srv.configureSignals()
 
 	return srv
@@ -45,6 +46,7 @@ func NewServer(routinesPool *safe.Pool, entryPoints TCPEntryPoints, entryPointsU
 
 // Start starts the server and Stop/Close it when context is Done.
 func (s *Server) Start(ctx context.Context) {
+	// 开启协程，接收系统关闭服务器信号，如ctrl c或kill -9
 	go func() {
 		<-ctx.Done()
 		logger := log.Ctx(ctx)
@@ -53,10 +55,13 @@ func (s *Server) Start(ctx context.Context) {
 		s.Stop()
 	}()
 
+	// READING 启动TCP和UDP的入口点
 	s.tcpEntryPoints.Start()
 	s.udpEntryPoints.Start()
 	s.watcher.Start()
 
+	// 开启监听自定义系统信号协程，用于日志轮转
+	// 该协程会一直阻塞，直到接收到系统关闭信号
 	s.routinesPool.GoCtx(s.listenSignals)
 }
 

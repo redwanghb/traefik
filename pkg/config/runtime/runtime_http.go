@@ -17,6 +17,7 @@ import (
 func (c *Configuration) GetRoutersByEntryPoints(ctx context.Context, entryPoints []string, tls bool) map[string]map[string]*RouterInfo {
 	entryPointsRouters := make(map[string]map[string]*RouterInfo)
 
+	// 遍历runtime.Configuration中的RouterInfo，rtName为RouterInfo的名称，rt为RouterInfo指针
 	for rtName, rt := range c.Routers {
 		if (tls && rt.TLS == nil) || (!tls && rt.TLS != nil) {
 			continue
@@ -25,6 +26,8 @@ func (c *Configuration) GetRoutersByEntryPoints(ctx context.Context, entryPoints
 		logger := log.Ctx(ctx).With().Str(logs.RouterName, rtName).Logger()
 
 		entryPointsCount := 0
+		// 遍历RouterInfo中的EntryPoints，查找与静态配置中匹配的entrypoints名称，如果查找到了以后，就在entryPointsRouters中添加以entrypointName为key的map，
+		// value为以RouterInfo名称为key的RouterInfo指针，同时将entryPointName添加到RouterInfo的Using中。
 		for _, entryPointName := range rt.EntryPoints {
 			if !slices.Contains(entryPoints, entryPointName) {
 				rt.AddError(fmt.Errorf("entryPoint %q doesn't exist", entryPointName), false)
@@ -33,6 +36,7 @@ func (c *Configuration) GetRoutersByEntryPoints(ctx context.Context, entryPoints
 				continue
 			}
 
+			// 如果RouterInfo的EntryPoint
 			if _, ok := entryPointsRouters[entryPointName]; !ok {
 				entryPointsRouters[entryPointName] = make(map[string]*RouterInfo)
 			}
@@ -51,6 +55,7 @@ func (c *Configuration) GetRoutersByEntryPoints(ctx context.Context, entryPoints
 		rt.Using = unique(rt.Using)
 	}
 
+	// 最后返回的内容格式是[静态配置文件中设置的entrypoint名称][RouterInfo名称]*RouterInfo
 	return entryPointsRouters
 }
 

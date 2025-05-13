@@ -10,8 +10,8 @@
 # Global configuration
 ################################################################
 global:
-  checkNewVersion: true
-  sendAnonymousUsage: true
+  checkNewVersion: false
+  sendAnonymousUsage: false
 
 ################################################################
 # EntryPoints configuration
@@ -149,3 +149,7 @@ entryPoints:
     # Default: true
     #
 #    exposedByDefault: false
+providers:
+  file:
+    filename: "./dynamic_conf.yml"
+    watch: true

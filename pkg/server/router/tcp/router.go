@@ -134,6 +134,7 @@ func (r *Router) ServeTCP(conn tcp.WriteCloser) {
 		return
 	}
 
+	// 判断和解析TLS ClientHello，如果不是TLS连接，则直接返回第一个字节的内容
 	hello, err := clientHelloInfo(br)
 	if err != nil {
 		conn.Close()

@@ -14,6 +14,7 @@ func (s *HandlerSwitcher) ServeTCP(conn WriteCloser) {
 	handler := s.router.Get()
 	h, ok := handler.(Handler)
 	if ok {
+		// 这里调用的是Router.ServeTCP
 		h.ServeTCP(conn)
 	} else {
 		conn.Close()

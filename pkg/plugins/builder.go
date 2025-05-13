@@ -42,7 +42,7 @@ func NewBuilder(client *Client, plugins map[string]Descriptor, localPlugins map[
 			_ = client.ResetAll()
 			return nil, fmt.Errorf("%s: failed to read manifest: %w", desc.ModuleName, err)
 		}
-
+		// 这里每次都要初始化一遍log？
 		logger := log.With().
 			Str("plugin", "plugin-"+pName).
 			Str("module", desc.ModuleName).
@@ -135,15 +135,17 @@ func newMiddlewareBuilder(ctx context.Context, goPath string, manifest *Manifest
 		if err != nil {
 			return nil, fmt.Errorf("wasm path: %w", err)
 		}
-
+		// 创建一个wasmMiddlewareBuilder实例，包含了wasm路径、cache和配置
+		// 过程中会编译一次wasm模块，但是并没有保留runtime
 		return newWasmMiddlewareBuilder(goPath, moduleName, wasmPath, settings)
 
+	// 创建一个Yaegi解释器实例，包含了goPath和manifest.Import
 	case runtimeYaegi, "":
 		i, err := newInterpreter(ctx, goPath, manifest.Import)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Yaegi interpreter: %w", err)
 		}
-
+		// 创建一个yaegiMiddlewareBuilder实例
 		return newYaegiMiddlewareBuilder(i, manifest.BasePkg, manifest.Import)
 
 	default:

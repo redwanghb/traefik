@@ -377,6 +377,7 @@ func (c *Configuration) ValidateConfiguration() error {
 		}
 	}
 
+	// 该配置废弃了
 	if c.Core != nil {
 		switch c.Core.DefaultRuleSyntax {
 		case "v3": // NOOP

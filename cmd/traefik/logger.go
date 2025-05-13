@@ -32,20 +32,25 @@ func setupLogger(staticConfiguration *static.Configuration) error {
 	}
 
 	// configure log format
+	// 使用lumberjack写入日志文件或者使用zerolog打印到控制台
 	w := getLogWriter(staticConfiguration)
 
 	// configure log level
+	// 默认开启error级别日志，可以通过静态配置的Log.Level设置日志级别，需要符合zerolog的规范
+	// 例如：debug、info、warn、error、fatal、panic
 	logLevel := getLogLevel(staticConfiguration)
 	zerolog.SetGlobalLevel(logLevel)
 
 	// create logger
 	logCtx := zerolog.New(w).With().Timestamp()
 	if logLevel <= zerolog.DebugLevel {
+		// 在日志中打印出具体代码调用所在的文件和行数，在这里是用于debug使用
 		logCtx = logCtx.Caller()
 	}
 
 	log.Logger = logCtx.Logger().Level(logLevel)
 
+	// 将日志发送到OTLP协议的服务器
 	if staticConfiguration.Log != nil && staticConfiguration.Log.OTLP != nil {
 		var err error
 		log.Logger, err = logs.SetupOTelLogger(log.Logger, staticConfiguration.Log.OTLP)
@@ -54,12 +59,15 @@ func setupLogger(staticConfiguration *static.Configuration) error {
 		}
 	}
 
+	// 设置默认的日志记录器，当通过log.Ctx(ctx)提取logger的时候，没有提取到，使用默认设置的logger
 	zerolog.DefaultContextLogger = &log.Logger
 
 	// Global logrus replacement (related to lib like go-rancher-metadata, docker, etc.)
+	// 将logrus的日志输出到zerolog中，v3版本中新增使用了zerolog提升日志性能，应该是为了兼容将logrus的日志输出都输出到zerolog中
 	logrus.StandardLogger().Out = logs.NoLevel(log.Logger, zerolog.DebugLevel)
 
 	// configure default standard log.
+	// 将标准库的日志输出到zerolog中，v3版本中新增使用了zerolog提升日志性能
 	stdlog.SetFlags(stdlog.Lshortfile | stdlog.LstdFlags)
 	stdlog.SetOutput(logs.NoLevel(log.Logger, zerolog.DebugLevel))
 

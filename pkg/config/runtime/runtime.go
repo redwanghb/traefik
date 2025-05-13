@@ -36,10 +36,15 @@ type Configuration struct {
 
 // NewConfig returns a Configuration initialized with the given conf. It never returns nil.
 func NewConfig(conf dynamic.Configuration) *Configuration {
+	// 起码要求HTTP、TCP、UDP中有一个不为nil，否则返回一个空的Configuration，TLS可以为空
 	if conf.HTTP == nil && conf.TCP == nil && conf.UDP == nil {
 		return &Configuration{}
 	}
 
+	// 根据dynamic.Configuration里的配置写runtime.Configuration
+	// dynamic.Configuration.HTTP.Routers写入到runtime.Configuration.Routers(map[string]RouterInfo)中
+	// dynamic.Configuration.HTTP.Services写入到runtime.Configuration.Services(map[string]ServiceInfo)中
+	// dynamic.Configuration.HTTP.Middlewares写入到runtime.Configuration.Middlewares(map[string]MiddlewareInfo)中
 	runtimeConfig := &Configuration{}
 
 	if conf.HTTP != nil {
@@ -68,6 +73,10 @@ func NewConfig(conf dynamic.Configuration) *Configuration {
 		}
 	}
 
+	// 根据dynamic.Configuration里的配置写runtime.Configuration
+	// dynamic.Configuration.TCP.Routers写到runtime.TCPRouters(map[string]TCPRouterInfo)中
+	// dynamic.Configuration.TCP.Services写到runtime.TCPServices(map[string]TCPServiceInfo)中
+	// dynamic.Configuration.TCP.Middlewares写到runtime.TCPMiddlewares(map[string]TCPMiddlewareInfo)中
 	if conf.TCP != nil {
 		if len(conf.TCP.Routers) > 0 {
 			runtimeConfig.TCPRouters = make(map[string]*TCPRouterInfo, len(conf.TCP.Routers))
@@ -91,6 +100,7 @@ func NewConfig(conf dynamic.Configuration) *Configuration {
 		}
 	}
 
+	// UDP部分的处理如上，不过UDP没有Middlewares
 	if conf.UDP != nil {
 		if len(conf.UDP.Routers) > 0 {
 			runtimeConfig.UDPRouters = make(map[string]*UDPRouterInfo, len(conf.UDP.Routers))

@@ -65,9 +65,12 @@ func (m *Manager) getHTTPRouters(ctx context.Context, entryPoints []string, tls 
 }
 
 // BuildHandlers Builds handler for all entry points.
+// 这里的entryPoints是指静态配置中的entryPoints
+// 构建一个最后返回NotFound的http.Handler
 func (m *Manager) BuildHandlers(rootCtx context.Context, entryPoints []string, tls bool) map[string]http.Handler {
 	entryPointHandlers := make(map[string]http.Handler)
 
+	// m.getHTTPRouters()返回的内容是基于entrypoint的视角从动态配置中看都绑定了哪些RouterInfo，RouterInfo里包含Router信息，数据格式为[entrypoint名称][RouterInfo名称]*RouterInfo
 	for entryPointName, routers := range m.getHTTPRouters(rootCtx, entryPoints, tls) {
 		logger := log.Ctx(rootCtx).With().Str(logs.EntryPointName, entryPointName).Logger()
 		ctx := logger.WithContext(rootCtx)
@@ -82,6 +85,7 @@ func (m *Manager) BuildHandlers(rootCtx context.Context, entryPoints []string, t
 	}
 
 	// Create default handlers.
+	// 遍历静态配置中的entrypoint，如果没有找到对应的http.Handler，使用默认的http.Handler
 	for _, entryPointName := range entryPoints {
 		logger := log.Ctx(rootCtx).With().Str(logs.EntryPointName, entryPointName).Logger()
 		ctx := logger.WithContext(rootCtx)
@@ -91,6 +95,7 @@ func (m *Manager) BuildHandlers(rootCtx context.Context, entryPoints []string, t
 			continue
 		}
 
+		// 基于observabilityMgr和NotFound http.Handler构建一个新的http.Handler
 		defaultHandler, err := m.observabilityMgr.BuildEPChain(ctx, entryPointName, "", nil).Then(BuildDefaultHTTPRouter())
 		if err != nil {
 			logger.Error().Err(err).Send()
@@ -103,22 +108,27 @@ func (m *Manager) BuildHandlers(rootCtx context.Context, entryPoints []string, t
 }
 
 func (m *Manager) buildEntryPointHandler(ctx context.Context, entryPointName string, configs map[string]*runtime.RouterInfo) (http.Handler, error) {
+	// 创建一个httpmuxer.Muxer对象，里面存储了Paser、PaserV2、defaultHandler三部分信息，没有存储routes信息
 	muxer, err := httpmuxer.NewMuxer()
 	if err != nil {
 		return nil, err
 	}
 
+	// 创建一个新的Handler，使用observabilityMgr的BuildEPChain方法，传入entryPointName和defaultHandler
 	defaultHandler, err := m.observabilityMgr.BuildEPChain(ctx, entryPointName, "", nil).Then(http.NotFoundHandler())
 	if err != nil {
 		return nil, err
 	}
 
+	// 修改muxer的defaultHandler为上面创建的defaultHandler
 	muxer.SetDefaultHandler(defaultHandler)
 
+	// routerName为RouterInfo的名称，routerConfig为*RouterInfo
 	for routerName, routerConfig := range configs {
 		logger := log.Ctx(ctx).With().Str(logs.RouterName, routerName).Logger()
 		ctxRouter := logger.WithContext(provider.AddInContext(ctx, routerName))
 
+		//设置 RouterInfo的优先级，与rule的长度有关
 		if routerConfig.Priority == 0 {
 			routerConfig.Priority = httpmuxer.GetRulePriority(routerConfig.Rule)
 		}
@@ -130,6 +140,7 @@ func (m *Manager) buildEntryPointHandler(ctx context.Context, entryPointName str
 			continue
 		}
 
+		// 创建handler，这里的handler为http服务最终使用的http.Handler，包含了对应middleware的相关处理
 		handler, err := m.buildRouterHandler(ctxRouter, routerName, routerConfig)
 		if err != nil {
 			routerConfig.AddError(err, true)
@@ -145,6 +156,8 @@ func (m *Manager) buildEntryPointHandler(ctx context.Context, entryPointName str
 			continue
 		}
 
+		// 将handler添加到muxer.routes中
+		// 在后续执行muxer.ServeHTTP()的时候，是遍历muxer.routes中route.handler执行对应的ServeHTTP()
 		if err = muxer.AddRoute(routerConfig.Rule, routerConfig.RuleSyntax, routerConfig.Priority, handler); err != nil {
 			routerConfig.AddError(err, true)
 			logger.Error().Err(err).Send()
@@ -161,6 +174,7 @@ func (m *Manager) buildEntryPointHandler(ctx context.Context, entryPointName str
 }
 
 func (m *Manager) buildRouterHandler(ctx context.Context, routerName string, routerConfig *runtime.RouterInfo) (http.Handler, error) {
+	// 如果基于routername可以找到对应的Handler，直接返回
 	if handler, ok := m.routerHandlers[routerName]; ok {
 		return handler, nil
 	}
@@ -203,6 +217,7 @@ func (m *Manager) buildRouterHandler(ctx context.Context, routerName string, rou
 func (m *Manager) buildHTTPHandler(ctx context.Context, router *runtime.RouterInfo, routerName string) (http.Handler, error) {
 	var qualifiedNames []string
 	for _, name := range router.Middlewares {
+		// 将Middleware的名字格式改成middlewareName@providerName
 		qualifiedNames = append(qualifiedNames, provider.GetQualifiedName(ctx, name))
 	}
 	router.Middlewares = qualifiedNames
@@ -211,11 +226,13 @@ func (m *Manager) buildHTTPHandler(ctx context.Context, router *runtime.RouterIn
 		return nil, errors.New("the service is missing on the router")
 	}
 
+	// 基于Service信息创建对应的http.Handler，用于最终访问Service，这里用到了httputil.Proxy
 	sHandler, err := m.serviceManager.BuildHTTP(ctx, router.Service)
 	if err != nil {
 		return nil, err
 	}
 
+	// 创建对应Router中设置的middlerware的alice.Chain
 	mHandler := m.middlewaresBuilder.BuildChain(ctx, router.Middlewares)
 
 	chain := alice.New()

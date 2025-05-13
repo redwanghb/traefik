@@ -38,6 +38,8 @@ func newHTTP3Server(ctx context.Context, name string, config *static.EntryPoint,
 	}
 
 	// if we have predefined connections from socket activation
+	// 判定是否启用了socketActivation功能，socketActivation是利用了go-systemd库里的activation.Files()方法，
+	// 相当于是通过systemd的socket激活功能来获取预定义的连接
 	if socketActivation.isEnabled() {
 		conn, err = socketActivation.getConn(name)
 		if err != nil {
@@ -45,6 +47,7 @@ func newHTTP3Server(ctx context.Context, name string, config *static.EntryPoint,
 		}
 	}
 
+	// 如果没有找到预定义的连接，则使用ListenConfig来创建一个新的连接
 	if conn == nil {
 		listenConfig := newListenConfig(config)
 		conn, err = listenConfig.ListenPacket(ctx, "udp", config.GetAddress())
@@ -60,11 +63,14 @@ func newHTTP3Server(ctx context.Context, name string, config *static.EntryPoint,
 		},
 	}
 
+	// 复用了httpsServer的Server对象中的Handler
 	h3.Server = &http3.Server{
-		Addr:      config.GetAddress(),
-		Port:      config.HTTP3.AdvertisedPort,
-		Handler:   httpsServer.Server.(*http.Server).Handler,
+		Addr:    config.GetAddress(),
+		Port:    config.HTTP3.AdvertisedPort,
+		Handler: httpsServer.Server.(*http.Server).Handler,
+		// 配置文件中设置的GetConfigForClient实际上也是调用的h3.getter的函数
 		TLSConfig: &tls.Config{GetConfigForClient: h3.getGetConfigForClient},
+		// 禁用0-RTT(0-RTT是QUIC协议中的一个特性，允许客户端在第一次握手时发送数据)
 		QUICConfig: &quic.Config{
 			Allow0RTT: false,
 		},
@@ -72,6 +78,7 @@ func newHTTP3Server(ctx context.Context, name string, config *static.EntryPoint,
 
 	previousHandler := httpsServer.Server.(*http.Server).Handler
 
+	// 封装httpsServer.Server.Handler，额外增加设置QUIC头部，这里会修改httpsServer.Server.Handler
 	httpsServer.Server.(*http.Server).Handler = http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if err := h3.Server.SetQUICHeaders(rw.Header()); err != nil {
 			log.Ctx(ctx).Error().Err(err).Msg("Failed to set HTTP3 headers")

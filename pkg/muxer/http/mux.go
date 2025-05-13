@@ -20,21 +20,35 @@ type Muxer struct {
 
 // NewMuxer returns a new muxer instance.
 func NewMuxer() (*Muxer, error) {
+	// 遍历httpFuncs，将所有的key添加到matchers中
 	var matchers []string
 	for matcher := range httpFuncs {
 		matchers = append(matchers, matcher)
 	}
 
+	// 构造一个predicate.Parser
+	// predicate.predicateParser{
+	//	d:	Def{
+	//	Operator:	predicate.Operator{
+	//	  AND:	andFunc,
+	//	  OR:		orFunc,
+	//	  NOT:	notFunc,
+	//	},
+	//	Functions:	map[macherName]fn #macherName为上面的macher，fn为NewParser中生成的函数
+	//	},
+	//}
 	parser, err := rules.NewParser(matchers)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating parser: %w", err)
 	}
 
+	// 遍历httpFuncsV2，将所有的key添加到matchersV2中
 	var matchersV2 []string
 	for matcher := range httpFuncsV2 {
 		matchersV2 = append(matchersV2, matcher)
 	}
 
+	// 同paser
 	parserV2, err := rules.NewParser(matchersV2)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating v2 parser: %w", err)

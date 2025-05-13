@@ -92,6 +92,7 @@ func NewUDPEntryPoint(config *static.EntryPoint, name string) (*UDPEntryPoint, e
 	timeout := time.Duration(config.UDP.Timeout)
 
 	// if we have predefined connections from socket activation
+	// 与TCPEnrtyPoints类似，第一步先判定是否提前在systemd中设置了socket激活的连接
 	if socketActivation.isEnabled() {
 		if conn, err := socketActivation.getConn(name); err == nil {
 			listener, err = udp.ListenPacketConn(conn, timeout)
@@ -103,6 +104,7 @@ func NewUDPEntryPoint(config *static.EntryPoint, name string) (*UDPEntryPoint, e
 		}
 	}
 
+	// 如果从socket激活中没有找到预定义的连接，则使用ListenConfig来创建一个新的连接
 	if listener == nil {
 		listenConfig := newListenConfig(config)
 		listener, err = udp.Listen(listenConfig, "udp", config.GetAddress(), timeout)
