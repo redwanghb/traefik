@@ -149,3 +149,7 @@ entryPoints:
     # Default: true
     #
 #    exposedByDefault: false
+providers:
+  file:
+    filename: "./dynamic_conf.yml"
+    watch: true
