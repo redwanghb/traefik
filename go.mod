@@ -68,7 +68,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.32.0
 	github.com/testcontainers/testcontainers-go/modules/k3s v0.32.0
 	github.com/tetratelabs/wazero v1.8.0
-	github.com/tidwall/gjson v1.17.0
+	github.com/tidwall/gjson v1.17.3
 	github.com/traefik/grpc-web v0.16.0
 	github.com/traefik/paerser v0.2.2
 	github.com/traefik/yaegi v0.16.1
@@ -115,6 +115,8 @@ require (
 	sigs.k8s.io/gateway-api v1.2.1
 	sigs.k8s.io/yaml v1.4.0
 )
+
+require github.com/redwanghb/coraza/v3 v3.0.7
 
 require (
 	cloud.google.com/go/auth v0.15.0 // indirect
@@ -172,6 +174,7 @@ require (
 	github.com/containerd/containerd v1.7.20 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
+	github.com/corazawaf/libinjection-go v0.2.1 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -241,6 +244,10 @@ require (
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/infobloxopen/infoblox-go-client/v2 v2.9.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/pgx/v5 v5.7.1 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jonboulle/clockwork v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -256,6 +263,7 @@ require (
 	github.com/liquidweb/liquidweb-cli v0.6.9 // indirect
 	github.com/liquidweb/liquidweb-go v1.6.4 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
+	github.com/magefile/mage v1.15.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailgun/minheap v0.0.0-20170619185613-3dbe6c6bf55f // indirect
 	github.com/mailgun/multibuf v0.1.2 // indirect
@@ -299,6 +307,7 @@ require (
 	github.com/oracle/oci-go-sdk/v65 v65.87.0 // indirect
 	github.com/ovh/go-ovh v1.7.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
+	github.com/petar-dambovaliev/aho-corasick v0.0.0-20240411101913-e07a1f0e8eb4 // indirect
 	github.com/peterhellberg/link v1.2.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -340,6 +349,7 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/transip/gotransip/v6 v6.26.0 // indirect
 	github.com/ultradns/ultradns-go-sdk v1.8.0-20241010134910-243eeec // indirect
+	github.com/valllabh/ocsf-schema-golang v1.0.3 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/vinyldns/go-vinyldns v0.9.16 // indirect
 	github.com/volcengine/volc-sdk-golang v1.0.199 // indirect
@@ -384,6 +394,7 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240423202451-8948a665c108 // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
+	rsc.io/binaryregexp v0.2.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )

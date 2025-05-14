@@ -50,6 +50,25 @@ type Middleware struct {
 	ResponseHeaderModifier *HeaderModifier  `json:"responseHeaderModifier,omitempty" toml:"-" yaml:"-" label:"-" file:"-" kv:"-" export:"true"`
 	RequestRedirect        *RequestRedirect `json:"requestRedirect,omitempty" toml:"-" yaml:"-" label:"-" file:"-" kv:"-" export:"true"`
 	URLRewrite             *URLRewrite      `json:"URLRewrite,omitempty" toml:"-" yaml:"-" label:"-" file:"-" kv:"-" export:"true"`
+	// 新增WAAP
+	WAAP *WAAP `json:"waap,omitempty" toml:"waap,omitempty" yaml:"waap,omitempty" export:"true"`
+}
+
+// 新增WAAP
+type WAAP struct {
+	// 检测规则文件路径或规则文件所在文件夹，配置其中一个即可
+	RulePath string `json:"rulepath,omitempty" toml:"rulepath,omitempty" yaml:"rulepath,omitempty" export:"true"`
+	RuleDir  string `json:"ruledir,omitempty" toml:"ruledir,omitempty" yaml:"ruledir,omitempty" export:"true"`
+
+	// 大模型内容检测接口
+	//LlmAPI LlmAPI `json:"llm_api,omitempty" toml:"llm_api,omitempty" yaml:"llm_api,omitempty" export:"true"`
+
+	// 处理最大的请求体和应答体
+	RequestSize  int `json:"request_size,omitempty" toml:"request_size,omitempty" yaml:"request_size,omitempty" export:"true"`
+	ResponseSize int `json:"response_size,omitempty" toml:"response_size,omitempty" yaml:"response_size,omitempty" export:"true"`
+
+	// 处理的MIME类型，用于识别LLM API
+	ResponseMIMEs []string `json:"response_mimes,omitempty" toml:"response_mimes,omitempty" yaml:"response_mime,omitempty" export:"true"`
 }
 
 // +k8s:deepcopy-gen=true

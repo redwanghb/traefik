@@ -37,6 +37,7 @@ import (
 	"github.com/traefik/traefik/v3/pkg/middlewares/retry"
 	"github.com/traefik/traefik/v3/pkg/middlewares/stripprefix"
 	"github.com/traefik/traefik/v3/pkg/middlewares/stripprefixregex"
+	"github.com/traefik/traefik/v3/pkg/middlewares/waap"
 	"github.com/traefik/traefik/v3/pkg/server/provider"
 )
 
@@ -421,6 +422,16 @@ func (b *Builder) buildConstructor(ctx context.Context, middlewareName string) (
 		}
 		middleware = func(next http.Handler) (http.Handler, error) {
 			return urlrewrite.NewURLRewrite(ctx, next, *config.URLRewrite, middlewareName), nil
+		}
+	}
+
+	// 新增用于WAAP插件
+	if config.WAAP != nil {
+		if middleware != nil {
+			return nil, badConf
+		}
+		middleware = func(next http.Handler) (http.Handler, error) {
+			return waap.NewWaap(ctx, next, *config.WAAP, middlewareName)
 		}
 	}
 
